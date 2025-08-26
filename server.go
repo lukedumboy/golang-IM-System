@@ -29,7 +29,9 @@ func (s *Server) Start() {
 		fmt.Println(err)
 		return
 	}
-	defer Listener.Close()
+	defer func() {
+		_ = Listener.Close()
+	}() //()为调用函数，类似于 server.Start()
 
 	for {
 		conn, err := Listener.Accept()
