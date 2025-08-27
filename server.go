@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -26,13 +27,13 @@ func NewServer(ip string, port int) *Server {
 	}
 }
 
-// 监听广播消息，并转发给所有
-func (s *Server) ListenerMessager() {
+// BroadcastLoop 监听广播消息，并转发给所有
+func (s *Server) BroadcastLoop() {
 	for {
 		msg := <-s.Message
 		s.mapLock.Lock()
-		for _, cli := range s.OnlineMap {
-			cli.c <- msg
+		for _, user := range s.OnlineMap {
+			user.c <- msg
 		}
 		s.mapLock.Unlock()
 	}
@@ -55,6 +56,25 @@ func (s *Server) Handler(conn net.Conn) {
 	//fmt.Println("连接建立成功")
 	s.BroadCast(user, "已上线\n")
 
+	go func() {
+		buff := make([]byte, 4096)
+		for {
+			n, err := conn.Read(buff)
+			if n == 0 {
+				s.BroadCast(user, "已下线\n")
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Println("Read error:", err)
+				return
+			}
+			// ???去除末尾的\n，首先为什么要去除，再就是为什么读到的信息里面会有\n
+			msg := string(buff[:n])
+			//s.Message <- msg
+			s.BroadCast(user, msg)
+		}
+	}()
+
 	//阻塞当前Handler
 	select {}
 }
@@ -71,7 +91,7 @@ func (s *Server) Start() {
 		_ = Listener.Close()
 	}() //()为调用函数，类似于 server.Start()
 
-	go s.ListenerMessager()
+	go s.BroadcastLoop()
 
 	for {
 		conn, err := Listener.Accept()
