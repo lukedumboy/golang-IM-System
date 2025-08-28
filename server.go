@@ -27,7 +27,7 @@ func NewServer(ip string, port int) *Server {
 	}
 }
 
-// BroadcastLoop 监听广播消息，并转发给所有
+// BroadcastLoop 监听广播消息，并转发给所有在线用户
 func (s *Server) BroadcastLoop() {
 	for {
 		msg := <-s.Message
@@ -41,37 +41,32 @@ func (s *Server) BroadcastLoop() {
 
 // BroadCast  广播消息
 func (s *Server) BroadCast(user *User, msg string) {
-	theMessage := "[" + user.Addr + "]" + user.Name + ":" + msg
+	theMessage := "[" + user.Addr + "]" + user.Name + ":" + msg + "\n"
 	s.Message <- theMessage
 }
 
 // Handler 单独将已经建立的连接拿出来，作为一条单独的线程维护
 func (s *Server) Handler(conn net.Conn) {
 	//新建一名用户
-	user := NewUser(conn)
+	user := NewUser(conn, s)
 	//将用户相关信息加入到OnlineMap中
-	s.mapLock.Lock()
-	s.OnlineMap[user.Name] = user
-	s.mapLock.Unlock()
-	//fmt.Println("连接建立成功")
-	s.BroadCast(user, "已上线\n")
+	user.Online()
 
 	go func() {
 		buff := make([]byte, 4096)
 		for {
 			n, err := conn.Read(buff)
 			if n == 0 {
-				s.BroadCast(user, "已下线\n")
+				user.Offline()
 				return
 			}
 			if err != nil && err != io.EOF {
 				fmt.Println("Read error:", err)
 				return
 			}
-			// ???去除末尾的\n，首先为什么要去除，再就是为什么读到的信息里面会有\n
-			msg := string(buff[:n])
-			//s.Message <- msg
-			s.BroadCast(user, msg)
+			msg := string(buff[:n-1])
+			//用户处理消息
+			user.HandleMessage(msg)
 		}
 	}()
 
