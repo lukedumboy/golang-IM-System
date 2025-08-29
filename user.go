@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 const Green = "\033[32m" // 前景色：绿色
@@ -43,7 +44,7 @@ func (u *User) Offline() {
 
 // SendMsg 给当前user对应的客户端发送消息
 func (u *User) SendMsg(msg string) {
-	_, err := u.conn.Write([]byte(msg))
+	_, err := u.conn.Write([]byte(msg + "\n"))
 	if err != nil {
 		fmt.Println("Write Error", err)
 	}
@@ -53,10 +54,24 @@ func (u *User) HandleMessage(msg string) {
 	if msg == "who" {
 		u.server.mapLock.Lock()
 		for _, user := range u.server.OnlineMap {
-			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + Green + "Online" + Reset + "\n"
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + Green + "Online" + Reset
 			u.SendMsg(onlineMsg)
 		}
 		u.server.mapLock.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		newName := strings.Split(msg, "|")[1]
+		_, exist := u.server.OnlineMap[newName]
+		if exist {
+			u.SendMsg("该用户名已存在")
+		} else {
+			u.server.mapLock.Lock()
+			//更改原有名字说对应的索引，并不影响储存结构和位置，只是更改了索引关系
+			delete(u.server.OnlineMap, u.Name)
+			u.server.OnlineMap[newName] = u
+			u.server.mapLock.Unlock()
+			u.Name = newName
+			u.SendMsg("新用户名:" + newName)
+		}
 	} else {
 		u.server.BroadCast(u, msg)
 	}
