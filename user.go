@@ -61,8 +61,10 @@ func (u *User) HandleMessage(msg string) {
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
 		newName := strings.Split(msg, "|")[1]
 		_, exist := u.server.OnlineMap[newName]
-		if exist {
+		if exist && newName != u.Name {
 			u.SendMsg("该用户名已存在")
+		} else if newName == u.Name {
+			u.SendMsg("用户名一致")
 		} else {
 			u.server.mapLock.Lock()
 			//更改原有名字说对应的索引，并不影响储存结构和位置，只是更改了索引关系

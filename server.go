@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 // Server 定义服务器的结构体，具有什么信息，是模版
@@ -52,6 +53,9 @@ func (s *Server) Handler(conn net.Conn) {
 	//将用户相关信息加入到OnlineMap中
 	user.Online()
 
+	//监听用户是否活跃的channel
+	isAlive := make(chan bool)
+
 	go func() {
 		buff := make([]byte, 4096)
 		for {
@@ -68,11 +72,26 @@ func (s *Server) Handler(conn net.Conn) {
 			msg := string(buff[:n-1])
 			//用户处理消息
 			user.HandleMessage(msg)
+			//向channel isAlive发送信息，代表这是一个活跃用户
+			isAlive <- true
 		}
 	}()
 
 	//阻塞当前Handler
-	select {}
+	//select {}
+	for {
+		select {
+		case <-isAlive:
+			//当前用户为活跃用户，重置定时器
+		case <-time.After(time.Second * 10):
+			//超出时间，下线处理
+			//强制关闭当前user
+			user.SendMsg("你已因超出时间下线")
+			close(user.c)
+			_ = conn.Close()
+			return
+		}
+	}
 }
 
 // Start 服务器的启动操作，先规定使用什么协议，再确定特定的端口监听进入的连接
