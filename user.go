@@ -18,6 +18,7 @@ type User struct {
 	server *Server
 }
 
+// Online 提示用户上线，并加入到OnlineMap
 func (u *User) Online() {
 	////新建一名用户
 	//user := NewUser(conn)
@@ -29,6 +30,7 @@ func (u *User) Online() {
 	u.server.BroadCast(u, Green+"已上线"+Reset)
 }
 
+// Offline 提示用户已下线，并从OnlineMap中移除
 func (u *User) Offline() {
 	//将用户相关信息从OnlineMap中移除
 	u.server.mapLock.Lock()
@@ -39,8 +41,25 @@ func (u *User) Offline() {
 	u.server.BroadCast(u, Red+"已下线"+Reset)
 }
 
+// SendMsg 给当前user对应的客户端发送消息
+func (u *User) SendMsg(msg string) {
+	_, err := u.conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Println("Write Error", err)
+	}
+}
+
 func (u *User) HandleMessage(msg string) {
-	u.server.BroadCast(u, msg)
+	if msg == "who" {
+		u.server.mapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + Green + "Online" + Reset + "\n"
+			u.SendMsg(onlineMsg)
+		}
+		u.server.mapLock.Unlock()
+	} else {
+		u.server.BroadCast(u, msg)
+	}
 }
 
 func NewUser(conn net.Conn, s *Server) *User {
@@ -59,6 +78,7 @@ func NewUser(conn net.Conn, s *Server) *User {
 func (u *User) ListenMessage() {
 	for {
 		message := <-u.c
+
 		_, err := u.conn.Write([]byte(message))
 		if err != nil {
 			fmt.Println("Write Error:", err)

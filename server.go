@@ -55,6 +55,7 @@ func (s *Server) Handler(conn net.Conn) {
 	go func() {
 		buff := make([]byte, 4096)
 		for {
+			//从conn中读取数据到buff中
 			n, err := conn.Read(buff)
 			if n == 0 {
 				user.Offline()
