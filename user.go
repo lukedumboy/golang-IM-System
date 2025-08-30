@@ -8,7 +8,8 @@ import (
 
 const Green = "\033[32m" // 前景色：绿色
 const Red = "\033[31m"   // 前景色：红色
-const Reset = "\033[0m"  // 重置：恢复默认颜色
+const Purple = "\033[35m"
+const Reset = "\033[0m" // 重置：恢复默认颜色
 
 type User struct {
 	Name string
@@ -74,6 +75,26 @@ func (u *User) HandleMessage(msg string) {
 			u.Name = newName
 			u.SendMsg("新用户名:" + newName)
 		}
+	} else if len(msg) > 3 && msg[:3] == "to|" {
+		//获取接收方的用户名
+		rcvName := strings.Split(msg, "|")[1]
+		if rcvName == "" {
+			u.SendMsg("消息格式不正确")
+			return
+		}
+		//根据用户名得到user对象
+		rcvUser, ok := u.server.OnlineMap[rcvName]
+		if !ok {
+			u.SendMsg("当前用户不存在")
+			return
+		}
+		msg := strings.Split(msg, "|")[2]
+		if msg == "" {
+			u.SendMsg("当前消息为空")
+			return
+		}
+		rcvUser.SendMsg(u.Name + ":" + Purple + msg + Reset)
+
 	} else {
 		u.server.BroadCast(u, msg)
 	}
@@ -93,9 +114,7 @@ func NewUser(conn net.Conn, s *Server) *User {
 }
 
 func (u *User) ListenMessage() {
-	for {
-		message := <-u.c
-
+	for message := range u.c {
 		_, err := u.conn.Write([]byte(message))
 		if err != nil {
 			fmt.Println("Write Error:", err)

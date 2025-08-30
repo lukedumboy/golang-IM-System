@@ -83,11 +83,16 @@ func (s *Server) Handler(conn net.Conn) {
 		select {
 		case <-isAlive:
 			//当前用户为活跃用户，重置定时器
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Second * 30):
 			//超出时间，下线处理
 			//强制关闭当前user
+			//???第一个观察点，就算SendMsg注释之后仍然报错，意味着与SendMsg无关
 			user.SendMsg("你已因超出时间下线")
+			s.mapLock.Lock()
+			delete(s.OnlineMap, user.Name)
+			s.mapLock.Unlock()
 			close(user.c)
+
 			_ = conn.Close()
 			return
 		}
