@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"time"
 )
 
 type Client struct {
@@ -80,12 +79,6 @@ func init() {
 	flag.StringVar(&serverIP, "ip", "127.0.0.1", "Server IP")
 	flag.IntVar(&serverPort, "port", 8888, "Server Port")
 	flag.StringVar(&name, "name", "Luke", "Name")
-}
-
-func preventDeadlock() {
-	for {
-		time.Sleep(1 * time.Second)
-	}
 }
 
 func main() {
