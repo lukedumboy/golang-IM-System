@@ -70,6 +70,28 @@ func (client *Client) menu() bool {
 	}
 }
 
+func (client *Client) PublicChat() bool {
+	var chatMsg string
+	_, err := fmt.Scanln("Group Chat (exit to quit)")
+	if err != nil {
+	}
+	for chatMsg != "exit" {
+		if len(chatMsg) == 0 {
+			sendMsg := chatMsg
+			_, err := client.conn.Write([]byte(sendMsg))
+			if err != nil {
+				return false
+			}
+		}
+		chatMsg = ""
+		fmt.Println("Group Chat (exit to quit)")
+		_, err := fmt.Scanln(&chatMsg)
+		if err != nil {
+		}
+	}
+	return true
+}
+
 func (client *Client) UpdateName() bool {
 	fmt.Print("Your Name:")
 	// 在读到\n的时候停止读
@@ -94,13 +116,12 @@ func (client *Client) Run() {
 		}
 		switch client.flagCase {
 		case 1:
-			fmt.Println("Group Chat")
+			client.PublicChat()
 			break
 		case 2:
 			fmt.Println("Private Chat")
 			break
 		case 3:
-			fmt.Println("Rename")
 			client.UpdateName()
 			break
 		}
