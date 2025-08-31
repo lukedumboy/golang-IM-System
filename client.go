@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
+	"strings"
 )
 
 type Client struct {
@@ -30,6 +34,18 @@ func NewClient(serverIP string, serverPort int, name string) *Client {
 	return client
 }
 
+func (client *Client) DealResponse() {
+	//一旦client.conn有数据就直接copy到Stdout上，永久阻塞监听
+	io.Copy(os.Stdout, client.conn)
+	//等价于io.Copy(os.Stdout, client.conn)
+	//for {
+	//	buff := make([]byte, 1024)
+	//	client.conn.Read(buff)
+	//	fmt.Println(buff)
+	//}
+
+}
+
 // menu()用于显示菜单选项
 func (client *Client) menu() bool {
 	var flagCase int
@@ -51,7 +67,25 @@ func (client *Client) menu() bool {
 	}
 }
 
-func (client *Client) run() {
+func (client *Client) UpdateName() bool {
+	fmt.Print("Your Name:")
+	// 在读到\n的时候停止读
+	reader := bufio.NewReader(os.Stdin)
+	line, errRead := reader.ReadString('\n')
+	client.Name = strings.TrimSpace(line)
+	if errRead != nil {
+		return false
+	}
+	sendMsg := "rename|" + client.Name
+	_, err := client.conn.Write([]byte(sendMsg))
+	if err != nil {
+		fmt.Println("conn.Write Error", err)
+		return false
+	}
+	return true
+}
+
+func (client *Client) Run() {
 	for client.flagCase != 0 {
 		for client.menu() != true {
 		}
@@ -64,6 +98,7 @@ func (client *Client) run() {
 			break
 		case 3:
 			fmt.Println("Rename")
+			client.UpdateName()
 			break
 		}
 	}
@@ -89,7 +124,9 @@ func main() {
 		fmt.Println("Error connecting to server")
 		return
 	}
+	//单独开启一个goroutine处理来自服务器的消息
+	go client.DealResponse()
 	fmt.Println("Welcome", client.Name)
 	//go preventDeadlock()
-	client.run()
+	client.Run()
 }

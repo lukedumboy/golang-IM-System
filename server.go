@@ -69,7 +69,7 @@ func (s *Server) Handler(conn net.Conn) {
 				fmt.Println("Read error:", err)
 				return
 			}
-			msg := string(buff[:n-1])
+			msg := string(buff[:n])
 			//用户处理消息
 			user.HandleMessage(msg)
 			//向channel isAlive发送信息，代表这是一个活跃用户

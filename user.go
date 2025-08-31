@@ -52,6 +52,7 @@ func (u *User) SendMsg(msg string) {
 }
 
 func (u *User) HandleMessage(msg string) {
+	msg = strings.TrimSpace(msg)
 	if msg == "who" {
 		u.server.mapLock.Lock()
 		for _, user := range u.server.OnlineMap {
