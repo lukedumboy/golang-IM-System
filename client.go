@@ -36,7 +36,10 @@ func NewClient(serverIP string, serverPort int, name string) *Client {
 
 func (client *Client) DealResponse() {
 	//一旦client.conn有数据就直接copy到Stdout上，永久阻塞监听
-	io.Copy(os.Stdout, client.conn)
+	_, err := io.Copy(os.Stdout, client.conn)
+	if err != nil {
+		fmt.Println("Error reading from server:", err)
+	}
 	//等价于io.Copy(os.Stdout, client.conn)
 	//for {
 	//	buff := make([]byte, 1024)
