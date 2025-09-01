@@ -9,6 +9,7 @@ import (
 const Green = "\033[32m" // 前景色：绿色
 const Red = "\033[31m"   // 前景色：红色
 const Purple = "\033[35m"
+const Gray = "\033[37m"
 const Reset = "\033[0m" // 重置：恢复默认颜色
 
 type User struct {
@@ -53,49 +54,51 @@ func (u *User) SendMsg(msg string) {
 
 func (u *User) HandleMessage(msg string) {
 	msg = strings.TrimSpace(msg)
-	if msg == "who" {
-		u.server.mapLock.Lock()
-		for _, user := range u.server.OnlineMap {
-			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + Green + "Online" + Reset
-			u.SendMsg(onlineMsg)
-		}
-		u.server.mapLock.Unlock()
-	} else if len(msg) > 7 && msg[:7] == "rename|" {
-		newName := strings.Split(msg, "|")[1]
-		_, exist := u.server.OnlineMap[newName]
-		if exist && newName != u.Name {
-			u.SendMsg("该用户名已存在")
-		} else if newName == u.Name {
-			u.SendMsg("用户名一致")
-		} else {
+	if len(msg) > 4 && msg[:4] == "CMD|" {
+		if msg[:7] == "CMD|WHO" {
 			u.server.mapLock.Lock()
-			//更改原有名字说对应的索引，并不影响储存结构和位置，只是更改了索引关系
-			delete(u.server.OnlineMap, u.Name)
-			u.server.OnlineMap[newName] = u
+			for _, user := range u.server.OnlineMap {
+				onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + Green + "Online" + Reset
+				u.SendMsg(onlineMsg)
+			}
 			u.server.mapLock.Unlock()
-			u.Name = newName
-			u.SendMsg("新用户名:" + newName)
-		}
-	} else if len(msg) > 3 && msg[:3] == "to|" {
-		//获取接收方的用户名
-		rcvName := strings.Split(msg, "|")[1]
-		if rcvName == "" {
-			u.SendMsg("消息格式不正确")
-			return
-		}
-		//根据用户名得到user对象
-		rcvUser, ok := u.server.OnlineMap[rcvName]
-		if !ok {
-			u.SendMsg("当前用户不存在")
-			return
-		}
-		msg := strings.Split(msg, "|")[2]
-		if msg == "" {
-			u.SendMsg("当前消息为空")
-			return
-		}
-		rcvUser.SendMsg(u.Name + ":" + Purple + msg + Reset)
+		} else if len(msg) > 11 && msg[:11] == "CMD|RENAME|" {
+			newName := strings.Split(msg, "|")[2]
+			_, exist := u.server.OnlineMap[newName]
+			if exist && newName != u.Name {
+				u.SendMsg("该用户名已存在")
+			} else if newName == u.Name {
+				u.SendMsg("用户名一致")
+			} else {
+				u.server.mapLock.Lock()
+				//更改原有名字说对应的索引，并不影响储存结构和位置，只是更改了索引关系
+				delete(u.server.OnlineMap, u.Name)
+				u.server.OnlineMap[newName] = u
+				u.server.mapLock.Unlock()
+				u.Name = newName
+				u.SendMsg("新用户名:" + newName)
+			}
+		} else if len(msg) > 7 && msg[:7] == "CMD|TO|" {
+			//获取接收方的用户名
+			rcvName := strings.Split(msg, "|")[2]
+			if rcvName == "" {
+				u.SendMsg("消息格式不正确")
+				return
+			}
+			//根据用户名得到user对象
+			rcvUser, ok := u.server.OnlineMap[rcvName]
+			if !ok {
+				u.SendMsg("当前用户不存在")
+				return
+			}
+			msg := strings.Split(msg, "|")[3]
+			if msg == "" {
+				u.SendMsg("当前消息为空")
+				return
+			}
+			rcvUser.SendMsg(u.Name + ":" + Purple + msg + Reset)
 
+		}
 	} else {
 		u.server.BroadCast(u, msg)
 	}
