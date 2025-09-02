@@ -1,5 +1,7 @@
 Golang-IM-System
 
+[ENG](https://github.com/lukedumboy/golang-IM-System/blob/main/README.md)|[简体中文](https://github.com/lukedumboy/golang-IM-System/blob/main/README-ZH.md)
+
 A simple Instant Messaging (IM) system implemented in Go, supporting multiple clients over TCP.
 This project includes both server and client programs with command-line interaction.
 
