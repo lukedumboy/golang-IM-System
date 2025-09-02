@@ -53,7 +53,7 @@ func (client *Client) DealResponse() {
 		if strings.HasPrefix(line, "CMD|") {
 			// Handle command messages here, for now just print
 			if line[:11] == "CMD|OFFLINE" {
-				client.conn.Close()
+				_ = client.conn.Close()
 				os.Exit(0)
 			}
 		} else {
@@ -120,12 +120,12 @@ func (client *Client) PrivateChat() bool {
 	var chatMsg string
 	client.SelectUsers()
 	fmt.Println("to whom you want to chat (exit to quit)")
-	fmt.Scanln(&chatUserName)
+	_, _ = fmt.Scanln(&chatUserName)
 
 	for chatUserName != "exit" {
 		fmt.Println("input your message:(exit to quit)")
 		fmt.Print("->" + chatUserName + ":")
-		fmt.Scanln(&chatMsg)
+		_, _ = fmt.Scanln(&chatMsg)
 		for chatMsg != "exit" {
 			if len(chatMsg) != 0 {
 				sendMsg := "CMD|TO|" + chatUserName + "|" + chatMsg
@@ -136,11 +136,11 @@ func (client *Client) PrivateChat() bool {
 			}
 			chatMsg = ""
 			fmt.Print("->" + chatUserName + ":")
-			fmt.Scanln(&chatMsg)
+			_, _ = fmt.Scanln(&chatMsg)
 		}
 		client.SelectUsers()
 		fmt.Println("to whom you want to chat (exit to quit)")
-		fmt.Scanln(&chatUserName)
+		_, _ = fmt.Scanln(&chatUserName)
 	}
 	return true
 }
